@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulador de Circuitos Lógicos</title>
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="controls">
+    <!-- Submenu Geral -->
+    <div class="submenu">
+      <button class="submenuToggle">Menu</button>
+      <div class="submenuContent">
+        <button onclick="window.location.href='doc.html'">DOC</button>
+        <button id="exportModules">Exportar Módulos</button>
+        <button id="importModules">Importar Módulos</button>
+        <input id="fileInput" type="file" style="display: none;" accept=".json" />
+      </div>
+    </div>
+  
+    <!-- Submenu de Logic Gates -->
+    <div class="submenu">
+      <button class="submenuToggle">Logic Gates</button>
+      <div class="submenuContent">
+        <button id="addAnd">AND</button>
+        <button id="addNot">NOT</button>
+        <button id="addOr">OR</button>
+      </div>
+    </div>
+  
+    <!-- Submenu de Buttons -->
+    <div class="submenu">
+      <button class="submenuToggle">Buttons</button>
+      <div class="submenuContent">
+        <button id="addButton">ToggleButton</button>
+        <button id="addMomentary">Button</button>
+        <button id="addClock">Clock</button>
+      </div>
+    </div>
+
+    <!-- Submenu de Buttons -->
+    <div class="submenu">
+      <button class="submenuToggle">Outputs</button>
+      <div class="submenuContent">
+        <button id="addLight">Light</button>
+        <button id="addDigit">DigitDisplay</button>
+      </div>
+    </div>
+  
+    <button id="combine">CREATE</button>
+  </div>
+  
+  
+
+  <div id="moduleContainer" style="position: absolute; top: 10px; right: 10px;">
+    <select id="savedModules"></select>
+    <button id="loadModule">Carregar Módulo</button>
+  </div>
+
+  
+
+  
+
+  <canvas id="circuitCanvas"></canvas>
+  <script src="consts.js"></script>
+  <script src="statisFunc.js"></script>
+  <script src="classes.js"></script>
+  <script src="circuit.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>Documentação Completa - Simulador de Circuitos Lógicos Atualizado</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      margin: 20px;
+      background: #f9f9f9;
+    }
+    h1, h2, h3, h4 {
+      color: #333;
+      margin-top: 20px;
+    }
+    pre {
+      background-color: #efefef;
+      padding: 10px;
+      border-left: 4px solid #ccc;
+      overflow-x: auto;
+    }
+    code {
+      font-family: Consolas, monospace;
+    }
+    .section {
+      margin-bottom: 30px;
+      background: #fff;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    details {
+      margin: 10px 0;
+    }
+    summary {
+      font-weight: bold;
+      cursor: pointer;
+    }
+    ul li {
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Documentação Completa - Simulador de Circuitos Lógicos Atualizado</h1>
+
+
+  <div class="section">
+    <h2>1. Constantes e Funções Utilitárias</h2>
+    <p>
+      Nesta seção, são definidas as constantes que controlam o layout dos componentes e o estilo do desenho no canvas. Estas constantes facilitam ajustes futuros no visual do simulador sem a necessidade de alterar vários trechos de código. Além disso, estão presentes funções utilitárias que realizam tarefas essenciais, como desenhar os pinos, calcular a distância de um ponto a um segmento (útil para manipular conexões com pontos intermediários) e gerenciar a persistência dos módulos através do <code>localStorage</code>.
+    </p>
+    <details open>
+      <summary>1.1. Constantes e Variáveis Globais</summary>
+      <pre><code>
+"use strict";
+
+// ====== Constantes de Configuração ======
+const NODE_WIDTH = 80;            // Largura padrão dos nós
+const NODE_HEIGHT = 50;           // Altura padrão dos nós
+const BORDER_WIDTH = 2;           // Largura das bordas dos elementos
+const HIGHLIGHT_BORDER_WIDTH = 3; // Largura da borda quando um elemento está destacado
+const PIN_OFFSET = 10;            // Deslocamento dos pinos em relação aos nós
+const PIN_RADIUS = 5;             // Tamanho (raio) dos pinos
+const FONT = "16px Arial";        // Fonte utilizada para os textos
+const FONT_COLOR = "#fff";        // Cor dos textos
+let modules = loadSavedModules(); // Carrega os módulos salvos no início
+      </code></pre>
+    </details>
+    <details open>
+      <summary>1.2. Função <code>drawPin()</code></summary>
+      <p>
+        A função <code>drawPin()</code> é responsável por desenhar um pino, que serve como ponto de conexão para as entradas e saídas dos componentes. Ela utiliza as constantes de tamanho e cor definidas anteriormente e destaca o pino em vermelho caso o parâmetro <code>isHighlighted</code> seja <code>true</code>.
+      </p>
+      <pre><code>
+function drawPin(ctx, localX, localY, isHighlighted) {
+  ctx.beginPath();
+  ctx.arc(localX, localY, PIN_RADIUS, 0, Math.PI * 2);
+  ctx.fillStyle = isHighlighted ? "#ff0000" : FONT_COLOR;
+  ctx.fill();
+}
+      </code></pre>
+    </details>
+    <details open>
+      <summary>1.3. Função <code>distanceFromSegment()</code></summary>
+      <p>
+        Esta função calcula a distância entre um ponto (representado por <code>mx</code> e <code>my</code>) e um segmento definido pelos pontos <code>p1</code> e <code>p2</code>. Ela é utilizada para detectar se um clique do mouse está próximo de uma conexão, permitindo manipulação dos pontos intermediários para ajuste de curvas e linhas.
+      </p>
+      <pre><code>
+function distanceFromSegment(mx, my, p1, p2) {
+  // p1 e p2 são objetos { x, y }
+  const vx = p2.x - p1.x;
+  const vy = p2.y - p1.y;
+  const wx = mx - p1.x;
+  const wy = my - p1.y;
+
+  const c1 = vx * wx + vy * wy;
+  if (c1 <= 0) {
+    return Math.hypot(mx - p1.x, my - p1.y);
+  }
+  const c2 = vx * vx + vy * vy;
+  if (c2 <= c1) {
+    return Math.hypot(mx - p2.x, my - p2.y);
+  }
+  const b = c1 / c2;
+  const projx = p1.x + b * vx;
+  const projy = p1.y + b * vy;
+  return Math.hypot(mx - projx, my - projy);
+}
+      </code></pre>
+    </details>
+    <details open>
+      <summary>1.4. Funções de Gerenciamento de Módulos</summary>
+      <p>
+        Estas funções permitem salvar, carregar, exportar e importar os módulos (sub-circuitos combinados) que o usuário cria. Elas interagem com o <code>localStorage</code> para persistir dados e facilitam a reutilização e compartilhamento dos módulos.
+      </p>
+      <ul>
+        <li>
+          <strong>saveModule(moduleData):</strong> Adiciona um novo módulo aos já salvos e atualiza a variável global.
+          <pre><code>
+function saveModule(moduleData) {
+  let savedModules = JSON.parse(localStorage.getItem("savedModules") || "[]");
+  savedModules.push(moduleData);
+  localStorage.setItem("savedModules", JSON.stringify(savedModules));
+  console.log("Módulo salvo:", moduleData);
+  modules = loadSavedModules();
+}
+          </code></pre>
+        </li>
+        <li>
+          <strong>loadSavedModules():</strong> Recupera os módulos do <code>localStorage</code> e os retorna.
+          <pre><code>
+function loadSavedModules() {
+  let savedModules = JSON.parse(localStorage.getItem("savedModules") || "[]");
+  console.log("Módulos salvos:", savedModules);
+  return savedModules;
+}
+          </code></pre>
+        </li>
+        <li>
+          <strong>populateSavedModules():</strong> Atualiza um elemento <code>&lt;select id="savedModules"&gt;</code> com os nomes dos módulos salvos.
+          <pre><code>
+function populateSavedModules() {
+  const select = document.getElementById("savedModules");
+  select.innerHTML = "";
+  modules.forEach(mod => {
+    const option = document.createElement("option");
+    option.value = mod.name;
+    option.textContent = mod.name;
+    select.appendChild(option);
+  });
+}
+          </code></pre>
+        </li>
+        <li>
+          <strong>exportModules():</strong> Exporta os módulos salvos em um arquivo JSON.
+          <pre><code>
+function exportModules() {
+  const dataStr = JSON.stringify(modules, null, 2);
+  const blob = new Blob([dataStr], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "modules.json";
+  a.click();
+  URL.revokeObjectURL(url);
+  console.log("Módulos exportados.");
+}
+          </code></pre>
+        </li>
+        <li>
+          <strong>importModules(event):</strong> Importa módulos de um arquivo JSON e os adiciona se não houver duplicatas.
+          <pre><code>
+function importModules(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const importedModules = JSON.parse(e.target.result);
+      if (Array.isArray(importedModules)) {
+        const uniqueModules = importedModules.filter(importedModule =>
+          !modules.some(existingModule => existingModule.name === importedModule.name)
+        );
+        if (uniqueModules.length > 0) {
+          modules = [...modules, ...uniqueModules];
+          localStorage.setItem("savedModules", JSON.stringify(modules));
+          populateSavedModules();
+          console.log("Módulos importados:", uniqueModules);
+        } else {
+          alert("Todos os módulos já foram importados.");
+        }
+      } else {
+        alert("O arquivo não contém módulos válidos.");
+      }
+    } catch (err) {
+      alert("Erro ao importar módulos: " + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+          </code></pre>
+        </li>
+      </ul>
+    </details>
+  </div>
+
+  <div class="section">
+    <h2>2. Classes Base e Componentes do Circuito</h2>
+    <p>
+      Esta seção detalha as classes que compõem os elementos visuais e lógicos do simulador. Cada classe estende a classe base <code>Node</code> e implementa métodos específicos para avaliar a lógica, desenhar no canvas e tratar interações.
+    </p>
+    <details open>
+      <summary>2.1. Classe <code>Node</code></summary>
+      <p>
+        A classe base <code>Node</code> fornece propriedades e métodos comuns para todos os componentes, como a posição, dimensões e verificação de se um ponto está dentro do elemento.
+      </p>
+      <pre><code>
+class Node {
+  constructor(x, y, width = NODE_WIDTH, height = NODE_HEIGHT) {
+    this.x = x;
+    this.y = y;
+    this.width = width;
+    this.height = height;
+  }
+  
+  contains(x, y) {
+    return (x >= this.x && x <= this.x + this.width && y >= this.y && y <= this.y + this.height);
+  }
+  
+  setPosition(x, y) {
+    this.x = x;
+    this.y = y;
+  }
+}
+      </code></pre>
+    </details>
+    <details open>
+      <summary>2.2. Classe <code>LogicGate</code></summary>
+      <p>
+        A classe <code>LogicGate</code> representa uma porta lógica customizável. Além de herdar as propriedades de <code>Node</code>, ela permite configurar o número de entradas e saídas, define uma função lógica personalizada e implementa métodos para atualizar os pinos, avaliar a lógica e desenhar o componente.
+      </p>
+      <pre><code>
+class LogicGate extends Node {
+  /**
+   * @param {number} x - Posição X.
+   * @param {number} y - Posição Y.
+   * @param {function} logicFunction - Função que define a operação lógica.
+   * @param {string} label - Rótulo, ex: "AND", "OR", "NOT".
+   * @param {number} numInputs - Número de entradas (padrão 2).
+   * @param {number} numOutputs - Número de saídas (padrão 1).
+   */
+  constructor(x, y, logicFunction, label = "", numInputs = 2, numOutputs = 1) {
+    super(x, y);
+    this.logicFunction = logicFunction;
+    this.label = label;
+    this.numInputs = numInputs;
+    this.numOutputs = numOutputs;
+    
+    // Inicializa pinos de entrada e saída
+    this.updateInputs();
+    this.updateOutputs();
+    
+    // Estado inicial das entradas e avaliação da função
+    this.inputStates = new Array(this.inputs.length).fill(false);
+    this.evaluate();
+  }
+  
+  updateInputs() {
+    this.inputs = [];
+    if (this.numInputs === 1) {
+      this.inputs.push({ x: this.x - PIN_OFFSET, y: this.y + this.height / 2 });
+    } else {
+      const spacing = this.height / (this.numInputs + 1);
+      for (let i = 0; i < this.numInputs; i++) {
+        this.inputs.push({ x: this.x - PIN_OFFSET, y: this.y + (i + 1) * spacing });
+      }
+    }
+  }
+  
+  updateOutputs() {
+    this.outputs = [];
+    if (this.numOutputs === 1) {
+      this.outputs.push({ x: this.x + this.width, y: this.y + this.height / 2 });
+    } else {
+      const spacing = this.height / (this.numOutputs + 1);
+      for (let i = 0; i < this.numOutputs; i++) {
+        this.outputs.push({ x: this.x + this.width, y: this.y + (i + 1) * spacing });
+      }
+    }
+  }
+
+  updateOutput(){
+    this.updateOutputs();
+  }
+  
+  evaluate() {
+    const result = this.logicFunction(...this.inputStates);
+    if (this.numOutputs === 1) {
+      this.outputState = result;
+    } else if (Array.isArray(result) && result.length === this.numOutputs) {
+      this.outputStates = result;
+    } else {
+      console.error("A função lógica deve retornar um array com comprimento igual a numOutputs.");
+      this.outputStates = new Array(this.numOutputs).fill(false);
+    }
+  }
+  
+  draw(ctx, highlighted) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.fillStyle = "#444";
+    ctx.strokeStyle = "#888";
+    ctx.lineWidth = BORDER_WIDTH;
+    ctx.fillRect(0, 0, this.width, this.height);
+    ctx.strokeRect(0, 0, this.width, this.height);
+    ctx.fillStyle = FONT_COLOR;
+    ctx.font = FONT;
+    ctx.textAlign = "center";
+    ctx.fillText(this.label || "GATE", this.width / 2, this.height / 2 + 5);
+    this.inputs.forEach(input => {
+      drawPin(ctx, input.x - this.x, input.y - this.y, highlighted === input);
+    });
+    this.outputs.forEach((output, index) => {
+      let isHighlighted = (highlighted && highlighted.piece === this && highlighted.index === index);
+      drawPin(ctx, output.x - this.x, output.y - this.y, isHighlighted);
+    });
+    ctx.restore();
+  }
+  
+  isInputClicked(x, y) {
+    return this.inputs.find(input => Math.hypot(input.x - x, input.y - y) <= PIN_RADIUS);
+  }
+  
+  isOutputClicked(x, y) {
+    for (let i = 0; i < this.outputs.length; i++) {
+      const output = this.outputs[i];
+      if (Math.hypot(output.x - x, output.y - y) <= PIN_RADIUS) {
+        return { piece: this, index: i, x: output.x, y: output.y };
+      }
+    }
+    return null;
+  }
+}
+      </code></pre>
+      <p>
+        Essa classe permite a criação dinâmica de portas lógicas personalizadas, possibilitando a combinação de funções lógicas de forma modular.
+      </p>
+    </details>
+    <details open>
+      <summary>2.3. Classe <code>Button</code></summary>
+      <p>
+        A classe <code>Button</code> implementa um botão tradicional que alterna seu estado (ligado/desligado) quando acionado. Possui um pino de saída que propaga o sinal do estado do botão.
+      </p>
+      <pre><code>
+class Button extends Node {
+  constructor(x, y) {
+    super(x, y);
+    this.type = "BUTTON";
+    this.state = false;
+    this.output = { piece: this, x: this.x + this.width, y: this.y + this.height / 2 };
+    this.outputState = this.state;
+  }
+  
+  updateOutput() {
+    this.output = { piece: this, x: this.x + this.width, y: this.y + this.height / 2 };
+  }
+  
+  toggleState() {
+    this.state = !this.state;
+    this.outputState = this.state;
+  }
+  
+  evaluate() {
+    this.outputState = this.state;
+  }
+  
+  draw(ctx, highlighted) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.fillStyle = this.state ? "#00cc00" : "#444";
+    ctx.strokeStyle = "#888";
+    ctx.lineWidth = BORDER_WIDTH;
+    ctx.fillRect(0, 0, this.width, this.height);
+    ctx.strokeRect(0, 0, this.width, this.height);
+    ctx.fillStyle = FONT_COLOR;
+    ctx.font = FONT;
+    ctx.textAlign = "center";
+    ctx.fillText("BUTTON", this.width / 2, this.height / 2 + 5);
+    if (this.output) {
+      drawPin(ctx, this.output.x - this.x, this.output.y - this.y, highlighted === this.output);
+    }
+    ctx.restore();
+  }
+  
+  isOutputClicked(x, y) {
+    return this.output && Math.hypot(this.output.x - x, this.output.y - y) <= PIN_RADIUS ? this.output : null;
+  }
+}
+      </code></pre>
+    </details>
+    <details open>
+      <summary>2.4. Classe <code>MomentaryButton</code></summary>
+      <p>
+        A classe <code>MomentaryButton</code> define um botão que permanece ativo somente enquanto estiver pressionado. É útil para simulações que requerem sinal temporário.
+      </p>
+      <pre><code>
+class MomentaryButton extends Node {
+  constructor(x, y) {
+    super(x, y, 100);
+    this.type = "MOMENTARY";
+    this.state = false;
+    this.output = { piece: this, x: this.x + this.width, y: this.y + this.height / 2 };
+    this.outputState = this.state;
+  }
+  
+  updateOutput() {
+    this.output = { piece: this, x: this.x + this.width, y: this.y + this.height / 2 };
+  }
+  
+  press() {
+    this.state = true;
+    this.outputState = true;
+  }
+  
+  release() {
+    this.state = false;
+    this.outputState = false;
+  }
+  
+  evaluate() {
+    this.outputState = this.state;
+  }
+  
+  draw(ctx, highlighted) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.fillStyle = this.state ? "#00cc00" : "#444";
+    ctx.strokeStyle = "#888";
+    ctx.lineWidth = BORDER_WIDTH;
+    ctx.fillRect(0, 0, this.width, this.height);
+    ctx.strokeRect(0, 0, this.width, this.height);
+    ctx.fillStyle = FONT_COLOR;
+    ctx.font = FONT;
+    ctx.textAlign = "center";
+    ctx.fillText("MOMENTARY", this.width / 2, this.height / 2 + 5);
+    if (this.output) {
+      drawPin(ctx, this.output.x - this.x, this.output.y - this.y, highlighted === this.output);
+    }
+    ctx.restore();
+  }
+  
+  isOutputClicked(x, y) {
+    return this.output && Math.hypot(this.output.x - x, this.output.y - y) <= PIN_RADIUS ? this.output : null;
+  }
+}
+      </code></pre>
+    </details>
+    <details open>
+      <summary>2.5. Classe <code>Light</code></summary>
+      <p>
+        A classe <code>Light</code> representa uma saída visual que acende ou apaga de acordo com o sinal de entrada recebido. Possui um único pino de entrada e altera sua cor para indicar seu estado.
+      </p>
+      <pre><code>
+class Light extends Node {
+  constructor(x, y) {
+    super(x, y);
+    this.type = "LIGHT";
+    this.state = false;
+    this.inputs = [{ x: this.x - PIN_OFFSET, y: this.y + this.height / 2 }];
+    this.inputStates = [false];
+    this.output = null;
+  }
+  
+  updateInputs() {
+    this.inputs = [{ x: this.x - PIN_OFFSET, y: this.y + this.height / 2 }];
+    this.inputStates = [false];
+  }
+  
+  evaluate() {
+    this.state = Boolean(this.inputStates[0]);
+  }
+  
+  draw(ctx, highlighted) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.fillStyle = this.state ? "#ffff00" : "#444";
+    ctx.strokeStyle = "#888";
+    ctx.lineWidth = BORDER_WIDTH;
+    ctx.fillRect(0, 0, this.width, this.height);
+    ctx.strokeRect(0, 0, this.width, this.height);
+    ctx.fillStyle = FONT_COLOR;
+    ctx.font = FONT;
+    ctx.textAlign = "center";
+    ctx.fillText("LIGHT", this.width / 2, this.height / 2 + 5);
+    this.inputs.forEach(input => {
+      drawPin(ctx, input.x - this.x, input.y - this.y, highlighted === input);
+    });
+    ctx.restore();
+  }
+  
+  isInputClicked(x, y) {
+    return this.inputs.find(input => Math.hypot(input.x - x, input.y - y) <= PIN_RADIUS);
+  }
+}
+      </code></pre>
+    </details>
+    <details open>
+      <summary>2.6. Classe <code>DigitDisplay</code></summary>
+      <p>
+        A classe <code>DigitDisplay</code> exibe um dígito baseado em 4 bits de entrada. Se o valor resultante estiver entre 0 e 9, exibe o número; para valores de 10 a 15, converte para as letras A-F, conforme o padrão hexadecimal.
+      </p>
+      <pre><code>
+class DigitDisplay extends Node {
+  /**
+   * @param {number} x - Posição X.
+   * @param {number} y - Posição Y.
+   */
+  constructor(x, y) {
+    super(x, y);
+    this.type = "DIGIT";
+    this.width = NODE_WIDTH;
+    this.height = NODE_HEIGHT + 20;
+    this.digit = "0";
+    this.numInputs = 4;
+    this.inputs = [];
+    this.inputStates = new Array(this.numInputs).fill(false);
+    this.updateInputs();
+  }
+  
+  updateInputs() {
+    this.inputs = [];
+    const spacing = this.height / (this.numInputs + 1);
+    for (let i = 0; i < this.numInputs; i++) {
+      this.inputs.push({ x: this.x - PIN_OFFSET, y: this.y + (i + 1) * spacing });
+    }
+    this.inputStates = new Array(this.numInputs).fill(false);
+  }
+  
+  evaluate() {
+    let value = 0;
+    for (let i = 0; i < this.numInputs; i++) {
+      if (this.inputStates[i]) {
+        value |= (1 << i);
+      }
+    }
+    if (value >= 0 && value <= 9) {
+      this.digit = value.toString();
+    } else {
+      this.digit = String.fromCharCode("A".charCodeAt(0) + value - 10);
+    }
+  }
+  
+  draw(ctx, highlighted) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.fillStyle = "#222";
+    ctx.strokeStyle = "#888";
+    ctx.lineWidth = BORDER_WIDTH;
+    ctx.fillRect(0, 0, this.width, this.height);
+    ctx.strokeRect(0, 0, this.width, this.height);
+    ctx.fillStyle = FONT_COLOR;
+    ctx.font = FONT;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(this.digit, this.width / 2, this.height / 2);
+    this.inputs.forEach(input => {
+      drawPin(ctx, input.x - this.x, input.y - this.y, highlighted === input);
+    });
+    ctx.restore();
+  }
+  
+  contains(x, y) {
+    return (x >= this.x && x <= this.x + this.width && y >= this.y && y <= this.y + this.height);
+  }
+  
+  setDigit(value) {
+    if ((typeof value === "number" && value >= 0 && value <= 9) || 
+        (typeof value === "string" && /^[A-F]$/.test(value))) {
+      this.digit = value.toString();
+    }
+  }
+  
+  isInputClicked(x, y) {
+    return this.inputs.find(input => Math.hypot(input.x - x, input.y - y) <= PIN_RADIUS);
+  }
+}
+      </code></pre>
+    </details>
+  </div>
+
+  <div class="section">
+    <h2>3. Classe <code>Circuit</code> – Gerenciamento, Interação e Simulação</h2>
+    <p>
+      A classe <code>Circuit</code> é o núcleo do simulador e gerencia os seguintes aspectos:
+    </p>
+    <ul>
+      <li>O redimensionamento e desenho do <code>canvas</code>, incluindo uma grade para facilitar o alinhamento dos componentes.</li>
+      <li>O armazenamento e gerenciamento dos componentes (<code>pieces</code>) e das conexões entre eles.</li>
+      <li>A propagação dos sinais lógicos entre os componentes por meio de iterações de simulação.</li>
+      <li>A manipulação interativa: criação, arrasto, conexão, ajuste de pontos intermediários e exclusão de componentes.</li>
+      <li>A combinação de circuitos: identifica entradas e saídas únicas, gera uma tabela verdade e cria um módulo combinando a função lógica do circuito.</li>
+    </ul>
+    <details open>
+      <summary>Exibir código completo da classe <code>Circuit</code></summary>
+      <pre><code>
+class Circuit {
+  constructor(canvas) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext("2d");
+    this.resizeCanvas();
+    this.pieces = [];
+    this.connections = [];
+    this.draggingPiece = null;
+    this.offsetX = 0;
+    this.offsetY = 0;
+    this.connecting = false;
+    this.connectionStart = null;
+    this.highlighted = null;
+    this.activeMomentary = null;
+    this.draggingIntermediate = null;
+    
+    this.initEvents();
+    this.draw();
+  }
+  
+  resizeCanvas() {
+    this.canvas.width = window.innerWidth;
+    this.canvas.height = window.innerHeight;
+  }
+  
+  initEvents() {
+    this.canvas.addEventListener("mousedown", e => this.handleMouseDown(e));
+    this.canvas.addEventListener("mousemove", e => this.handleMouseMove(e));
+    this.canvas.addEventListener("mouseup", () => this.handleMouseUp());
+    this.canvas.addEventListener("contextmenu", e => this.handleContextMenu(e));
+    this.canvas.addEventListener("dblclick", e => this.handleDbClick(e));
+    window.addEventListener("resize", () => {
+      this.resizeCanvas();
+      this.draw();
+    });
+  }
+  
+  simulate() {
+    let iterations = 0;
+    let changed;
+    do {
+      changed = false;
+      // Zera as entradas de cada componente
+      for (const piece of this.pieces) {
+        if (piece.inputStates && piece.inputStates.length) {
+          piece.inputStates.fill(false);
+        }
+      }
+      // Propaga os sinais pelas conexões; permite múltiplas conexões utilizando OR
+      this.connections.forEach(conn => {
+        const sourceVal = conn.start.piece.outputState !== undefined ?
+          conn.start.piece.outputState :
+          (conn.start.piece.outputStates ? conn.start.piece.outputStates[conn.start.index] : false);
+        conn.end.piece.inputStates[conn.end.index] = conn.end.piece.inputStates[conn.end.index] || sourceVal;
+      });
+      // Avalia cada componente para atualizar seus estados
+      for (const piece of this.pieces) {
+        if (typeof piece.evaluate === "function") {
+          const oldVal = piece.outputState !== undefined ? piece.outputState : (piece.outputStates ? [...piece.outputStates] : null);
+          piece.evaluate();
+          const newVal = piece.outputState !== undefined ? piece.outputState : (piece.outputStates ? piece.outputStates : null);
+          if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
+            changed = true;
+          }
+        }
+      }
+      iterations++;
+    } while (changed && iterations < 10);
+  }
+  
+  draw() {
+    this.simulate();
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.drawGrid();
+    // Atualiza as posições das conexões com base nas posições atuais dos componentes
+    this.connections.forEach(conn => {
+      if (conn.start.piece.output) {
+        conn.start.x = conn.start.piece.output.x;
+        conn.start.y = conn.start.piece.output.y;
+      } else if (conn.start.piece.outputs) {
+        let idx = conn.start.index || 0;
+        conn.start.x = conn.start.piece.outputs[idx].x;
+        conn.start.y = conn.start.piece.outputs[idx].y;
+      }
+      const targetInput = conn.end.piece.inputs[conn.end.index];
+      conn.end.x = targetInput.x;
+      conn.end.y = targetInput.y;
+    });
+    // Desenha as conexões, utilizando curvas se houver pontos intermediários
+    this.connections.forEach(conn => {
+      this.ctx.beginPath();
+      this.ctx.moveTo(conn.start.x, conn.start.y);
+      if (conn.intermediatePoints.length === 1) {
+        const cp = conn.intermediatePoints[0];
+        this.ctx.quadraticCurveTo(cp.x, cp.y, conn.end.x, conn.end.y);
+      } else if (conn.intermediatePoints.length > 1) {
+        conn.intermediatePoints.forEach(point => this.ctx.lineTo(point.x, point.y));
+        this.ctx.lineTo(conn.end.x, conn.end.y);
+      } else {
+        this.ctx.lineTo(conn.end.x, conn.end.y);
+      }
+      let color = "#00ff00";
+      if (conn.highlight) {
+        color = "#ff0000";
+      } else if (conn.start.piece.outputState || (conn.start.piece.outputStates && conn.start.piece.outputStates[0])) {
+        color = "#ffff00";
+      }
+      this.ctx.strokeStyle = color;
+      this.ctx.lineWidth = conn.highlight ? HIGHLIGHT_BORDER_WIDTH : BORDER_WIDTH;
+      this.ctx.stroke();
+    });
+    // Desenha cada componente
+    this.pieces.forEach(piece => piece.draw(this.ctx, this.highlighted));
+  }
+
+  drawGrid(gridSize = 20) {
+    const { width, height } = this.canvas;
+    this.ctx.save();
+    this.ctx.strokeStyle = "#333";
+    this.ctx.lineWidth = 1;
+    for (let x = 0; x < width; x += gridSize) {
+      this.ctx.beginPath();
+      this.ctx.moveTo(x, 0);
+      this.ctx.lineTo(x, height);
+      this.ctx.stroke();
+    }
+    for (let y = 0; y < height; y += gridSize) {
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, y);
+      this.ctx.lineTo(width, y);
+      this.ctx.stroke();
+    }
+    this.ctx.restore();
+  }
+  
+  addLogicGate(logicFunction, label, numInputs = 2, numOutputs = 1) {
+    const x = Math.random() * (this.canvas.width - 100) + 50;
+    const y = Math.random() * (this.canvas.height - 100) + 50;
+    const newPiece = new LogicGate(x, y, logicFunction, label, numInputs, numOutputs);
+    this.pieces.push(newPiece);
+    this.draw();
+  }
+  
+  addButton() {
+    const x = Math.random() * (this.canvas.width - 100) + 50;
+    const y = Math.random() * (this.canvas.height - 100) + 50;
+    const newPiece = new Button(x, y);
+    this.pieces.push(newPiece);
+    this.draw();
+  }
+  
+  addMomentary() {
+    const x = Math.random() * (this.canvas.width - 100) + 50;
+    const y = Math.random() * (this.canvas.height - 100) + 50;
+    const newPiece = new MomentaryButton(x, y);
+    this.pieces.push(newPiece);
+    this.draw();
+  }
+  
+  addLight() {
+    const x = Math.random() * (this.canvas.width - 100) + 50;
+    const y = Math.random() * (this.canvas.height - 100) + 50;
+    const newPiece = new Light(x, y);
+    this.pieces.push(newPiece);
+    this.draw();
+  }
+
+  addDigit() {
+    const x = Math.random() * (this.canvas.width - 100) + 50;
+    const y = Math.random() * (this.canvas.height - 100) + 50;
+    const newPiece = new DigitDisplay(x, y);
+    this.pieces.push(newPiece);
+    this.draw();
+  }
+
+  getConnectionAt(x, y) {
+    for (const conn of this.connections) {
+      const points = [conn.start, ...conn.intermediatePoints, conn.end];
+      for (let i = 0; i < points.length - 1; i++) {
+        if (distanceFromSegment(x, y, points[i], points[i+1]) < 5) {
+          return conn;
+        }
+      }
+    }
+    return null;
+  }
+  
+  handleMouseDown(e) {
+    const mouseX = e.offsetX;
+    const mouseY = e.offsetY;
+    // Verifica se o clique foi em algum ponto intermediário para arrastá-lo
+    for (const conn of this.connections) {
+      for (let i = 0; i < conn.intermediatePoints.length; i++) {
+        const point = conn.intermediatePoints[i];
+        if (Math.hypot(point.x - mouseX, point.y - mouseY) <= PIN_RADIUS + 2) {
+          this.draggingIntermediate = { conn, index: i };
+          console.log("Arrastando ponto intermediário.");
+          return;
+        }
+      }
+    }
+    // Inicia conexão clicando no pino de saída de um componente
+    for (const piece of this.pieces) {
+      if (piece.isOutputClicked && piece.isOutputClicked(mouseX, mouseY)) {
+        this.connectionStart = piece.isOutputClicked(mouseX, mouseY);
+        this.connecting = true;
+        this.highlighted = this.connectionStart;
+        this.draw();
+        return;
+      }
+    }
+    // Se já estiver conectando, verifica se o clique é num pino de entrada para finalizar a conexão
+    if (this.connecting) {
+      for (const piece of this.pieces) {
+        if (piece.isInputClicked && piece.isInputClicked(mouseX, mouseY)) {
+          const input = piece.isInputClicked(mouseX, mouseY);
+          const exists = this.connections.some(conn =>
+            conn.start.piece === this.connectionStart.piece &&
+            conn.end.piece === piece &&
+            conn.end.index === piece.inputs.indexOf(input)
+          );
+          if (!exists) {
+            this.connections.push({
+              start: { piece: this.connectionStart.piece, index: this.connectionStart.index, x: this.connectionStart.x, y: this.connectionStart.y },
+              end: { piece: piece, index: piece.inputs.indexOf(input), x: input.x, y: input.y },
+              highlight: false,
+              intermediatePoints: []
+            });
+          }
+          this.resetConnection();
+          this.draw();
+          return;
+        }
+      }
+    }
+    // Verifica se o clique foi sobre um componente para movê-lo ou acioná-lo (botões, momentary, etc.)
+    for (const piece of this.pieces) {
+      if (piece.contains(mouseX, mouseY)) {
+        if (piece.type === "MOMENTARY") {
+          if (e.button === 0) {
+            this.draggingPiece = piece;
+            this.offsetX = mouseX - piece.x;
+            this.offsetY = mouseY - piece.y;
+            return;
+          } else if (e.button === 1) {
+            piece.press();
+            this.activeMomentary = piece;
+            this.draw();
+            return;
+          }
+        } else if (piece.type === "BUTTON") {
+          if (e.button === 0) {
+            this.draggingPiece = piece;
+            this.offsetX = mouseX - piece.x;
+            this.offsetY = mouseY - piece.y;
+            return;
+          } else if (e.button === 1) {
+            piece.toggleState();
+            this.draw();
+            return;
+          }
+        } else {
+          if (e.button === 0) {
+            this.draggingPiece = piece;
+            this.offsetX = mouseX - piece.x;
+            this.offsetY = mouseY - piece.y;
+            return;
+          }
+        }
+      }
+    }
+    this.resetConnection();
+    this.draw();
+  }
+  
+  handleMouseMove(e) {
+    const mouseX = e.offsetX;
+    const mouseY = e.offsetY;
+    const connection = this.getConnectionAt(mouseX, mouseY);
+    if (connection) {
+      connection.highlight = true;
+    } else {
+      this.connections.forEach(conn => conn.highlight = false);
+    }
+    if (this.draggingIntermediate) {
+      this.draggingIntermediate.conn.intermediatePoints[this.draggingIntermediate.index] = { x: mouseX, y: mouseY };
+      this.draw();
+    }
+    if (this.draggingPiece) {
+      this.draggingPiece.x = mouseX - this.offsetX;
+      this.draggingPiece.y = mouseY - this.offsetY;
+      if (this.draggingPiece.updateInputs) this.draggingPiece.updateInputs();
+      if (this.draggingPiece.updateOutput) this.draggingPiece.updateOutput();
+    }
+    this.draw();
+  }
+
+  handleDbClick(e) {
+    const mouseX = e.offsetX;
+    const mouseY = e.offsetY;
+    this.addIntermediatePoint(mouseX, mouseY);
+  }
+
+  addIntermediatePoint(mouseX, mouseY) {
+    const connection = this.getConnectionAt(mouseX, mouseY);
+    if (connection) {
+      connection.intermediatePoints.push({ x: mouseX, y: mouseY });
+      this.draw();
+    }
+  }
+  
+  handleMouseUp() {
+    if (this.activeMomentary) {
+      this.activeMomentary.release();
+      this.activeMomentary = null;
+    }
+    this.draggingPiece = null;
+    this.draggingIntermediate = null;
+  }
+  
+  handleContextMenu(e) {
+    e.preventDefault();
+    const mouseX = e.offsetX;
+    const mouseY = e.offsetY;
+    const clickedPiece = this.pieces.find(piece => piece.contains(mouseX, mouseY));
+    if (clickedPiece) {
+      this.connections = this.connections.filter(conn => conn.start.piece !== clickedPiece && conn.end.piece !== clickedPiece);
+      this.pieces = this.pieces.filter(piece => piece !== clickedPiece);
+      this.draw();
+      return;
+    }
+    const connection = this.getConnectionAt(mouseX, mouseY);
+    if (connection) {
+      this.connections = this.connections.filter(conn => conn !== connection);
+      this.draw();
+    }
+  }
+  
+  resetConnection() {
+    this.connecting = false;
+    this.connectionStart = null;
+    this.highlighted = null;
+  }
+  
+  combine() {
+    const inputPiecesSet = new Set(
+      this.connections
+        .filter(conn => conn.start.piece instanceof Button || conn.start.piece instanceof MomentaryButton)
+        .map(conn => conn.start.piece)
+    );
+    const outputPiecesSet = new Set(
+      this.connections
+        .filter(conn => conn.end.piece instanceof Light)
+        .map(conn => conn.end.piece)
+    );
+    const inputPieces = Array.from(inputPiecesSet).sort((a, b) => a.y - b.y);
+    const outputPieces = Array.from(outputPiecesSet).sort((a, b) => a.y - b.y);
+    if (inputPieces.length === 0 || outputPieces.length === 0) {
+      console.log("O circuito precisa ter pelo menos uma entrada e uma saída para combinar.");
+      return;
+    }
+    const numInputs = inputPieces.length;
+    const numOutputs = outputPieces.length;
+    const truthTable = [];
+    const totalCombinations = 1 << numInputs;
+    for (let i = 0; i < totalCombinations; i++) {
+      inputPieces.forEach((piece, index) => {
+        const state = Boolean((i >> index) & 1);
+        piece.state = state;
+        piece.outputState = state;
+      });
+      this.simulate();
+      if (numOutputs === 1) {
+        truthTable[i] = outputPieces[0].state;
+        console.log(`Combinação ${i.toString(2).padStart(numInputs, '0')}: Saída = ${truthTable[i]}`);
+      } else {
+        truthTable[i] = outputPieces.map(piece => piece.state);
+        console.log(`Combinação ${i.toString(2).padStart(numInputs, '0')}: Saídas = ${truthTable[i]}`);
+      }
+    }
+    const newLogicFunction = function(...inputs) {
+      if (inputs.length !== numInputs) {
+        return numOutputs === 1 ? false : new Array(numOutputs).fill(false);
+      }
+      let index = 0;
+      for (let i = 0; i < numInputs; i++) {
+        if (inputs[i]) {
+          index |= (1 << i);
+        }
+      }
+      return truthTable[index];
+    };
+    const gateHeight = Math.max(NODE_HEIGHT, Math.max(numInputs, numOutputs) * 10);
+    const gateWidth = Math.max(NODE_WIDTH, Math.max(numInputs, numOutputs) * 10);
+    const newModule = new LogicGate(100, 100, newLogicFunction, "Module", numInputs, numOutputs);
+    newModule.width = gateWidth;
+    newModule.height = gateHeight;
+    const moduleName = prompt("Digite o nome para este módulo combinado:");
+    if (moduleName) {
+      newModule.label = moduleName;
+      const moduleData = { name: moduleName, truthTable, numInputs, numOutputs, label: moduleName };
+      saveModule(moduleData);
+    }
+    this.pieces = [newModule];
+    this.connections = [];
+    this.draw();
+    console.log("Circuito combinado. Tabela verdade:", truthTable);
+  }
+}
+      </code></pre>
+    </details>
+    <p>
+      A classe <code>Circuit</code> gerencia todas as interações e a simulação dos sinais lógicos. Ela atualiza as posições dos componentes, redesenha o canvas a cada alteração e permite ao usuário criar conexões, mover elementos, adicionar pontos intermediários para ajustar as conexões e combinar circuitos em um único módulo lógico.
+    </p>
+  </div>
+</body>
+</html>
