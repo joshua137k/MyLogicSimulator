@@ -192,7 +192,6 @@ class Circuit {
 
 
   combineCompositeGame(game) {
-    console.log(game);
     const currentCircuit = game.circuit;
   
     // 2. Cria um subcircuito clonando as peças e conexões atuais.
@@ -242,6 +241,9 @@ class Circuit {
     
     compositeGate.width = NODE_WIDTH;
     compositeGate.height = NODE_HEIGHT;
+
+    saveModule(compositeGate.toJSON());
+
   
     // 6. Cria um novo circuito limpo para o game e insere o CompositeGate nele.
     game.circuit = new Circuit();
@@ -269,12 +271,10 @@ class CompositeGate extends LogicGate {
    * @param {Array} subOutputsMapping - (Opcional) Mapeamento dos pinos de saída para os nós do subcircuito.
    */
   constructor(x, y, subCircuit, label = "SubCircuit", numInputs = 2, numOutputs = 1, subInputsMapping = [], subOutputsMapping = []) {
-    // Passamos uma função dummy, pois iremos sobrescrever evaluate()
     
     super(x, y, () => false, label, numInputs, numOutputs);
     this.subCircuit = subCircuit;
-    // Se não for informado um mapeamento, assumimos que os nós de entrada e saída do subcircuito 
-    // já foram definidos (por exemplo, via combine()).
+
     this.subInputsMapping = subInputsMapping ;
     this.subOutputsMapping = subOutputsMapping ;
     
@@ -320,21 +320,18 @@ class CompositeGate extends LogicGate {
     ctx.save();
     ctx.translate(this.x, this.y);
     
-    // Desenha o retângulo principal
     ctx.fillStyle = "#555";
     ctx.strokeStyle = "#aaa";
     ctx.lineWidth = BORDER_WIDTH;
     ctx.fillRect(0, 0, this.width, this.height);
     ctx.strokeRect(0, 0, this.width, this.height);
   
-    // Rótulo centralizado
     ctx.fillStyle = FONT_COLOR;
     ctx.font = FONT;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(this.label, this.width / 2, this.height / 2);
   
-    // Desenhar os pinos de entrada
     this.inputs.forEach((input) => {
       drawPin(ctx, input.x - this.x, input.y - this.y, highlighted === input);
     });
@@ -345,7 +342,6 @@ class CompositeGate extends LogicGate {
         if (highlighted && highlighted.piece === this && highlighted.index === index) {
         isHighlighted = true;
         }
-      // Mesma ideia: subtraia this.x e this.y se output.x for absoluto
       drawPin(ctx, output.x - this.x, output.y - this.y, isHighlighted);
     });
     
@@ -354,3 +350,187 @@ class CompositeGate extends LogicGate {
   }
   
 }
+
+
+
+CompositeGate.prototype.toJSON = function() {
+  return {
+    type: "CompositeGate",
+    x: this.x,
+    y: this.y,
+    label: this.label,
+    numInputs: this.numInputs,
+    numOutputs: this.numOutputs,
+    subCircuit: this.subCircuit.toJSON(),
+    subInputsMappingIndices: this.subInputsMapping.map(piece => this.subCircuit.pieces.indexOf(piece)),
+    subOutputsMappingIndices: this.subOutputsMapping.map(piece => this.subCircuit.pieces.indexOf(piece))
+  };
+};
+
+CompositeGate.fromJSON = function(data) {
+const subCircuit = Circuit.fromJSON(data.subCircuit);
+const compositeGate = new CompositeGate(
+  data.x,
+  data.y,
+  subCircuit,
+  data.label,
+  data.numInputs,
+  data.numOutputs
+);
+compositeGate.subInputsMapping = data.subInputsMappingIndices.map(index => subCircuit.pieces[index]);
+compositeGate.subOutputsMapping = data.subOutputsMappingIndices.map(index => subCircuit.pieces[index]);
+return compositeGate;
+};
+
+Circuit.prototype.toJSON = function() {
+  return {
+    pieces: this.pieces.map(piece => {
+      if (piece.type === "CompositeGate") {
+        return piece.toJSON();
+      } else {
+        return {
+          type: piece.type || "",  
+          x: piece.x,
+          y: piece.y,
+          label: piece.label || "",
+          numInputs: piece.numInputs || 0,
+          numOutputs: piece.numOutputs || 0
+        };
+      }
+    }),
+    connections: this.connections.map(conn => ({
+      startPieceIndex: this.pieces.indexOf(conn.start.piece),
+      startIndex: conn.start.index,
+      endPieceIndex: this.pieces.indexOf(conn.end.piece),
+      endIndex: conn.end.index,
+      intermediatePoints: conn.intermediatePoints
+    }))
+  };
+};
+
+Circuit.fromJSON = function(data) {
+  const circuit = new Circuit();
+
+  data.pieces.forEach(pieceData => {
+    let piece;
+    if (pieceData.type === "CompositeGate") {
+      // Reconstrói uma CompositeGate usando seu próprio fromJSON
+      piece = CompositeGate.fromJSON(pieceData);
+    } else if (pieceData.truthTable) {
+      // Peça criada via combine() – possui uma truthTable
+      const numInputs = pieceData.numInputs;
+      const numOutputs = pieceData.numOutputs;
+      const truthTable = pieceData.truthTable;
+      const logicFunction = function(...inputs) {
+        if (inputs.length !== numInputs) {
+          return numOutputs === 1 ? false : new Array(numOutputs).fill(false);
+        }
+        let index = 0;
+        for (let i = 0; i < numInputs; i++) {
+          if (inputs[i]) {
+            index |= (1 << i);
+          }
+        }
+        return truthTable[index];
+      };
+      piece = new LogicGate(pieceData.x, pieceData.y, logicFunction, pieceData.label, numInputs, numOutputs);
+      piece.width = pieceData.width || NODE_WIDTH;
+      piece.height = pieceData.height || NODE_HEIGHT;
+      piece.updateInputs();
+      piece.updateOutputs();
+    } else {
+      // Outras peças: BUTTON, LIGHT, MOMENTARY, CLOCK ou gates customizadas (ex: NOT)
+      switch (pieceData.type) {
+        case "BUTTON":
+          piece = new Button(pieceData.x, pieceData.y);
+          break;
+        case "LIGHT":
+          piece = new Light(pieceData.x, pieceData.y);
+          break;
+        case "MOMENTARY":
+          piece = new MomentaryButton(pieceData.x, pieceData.y);
+          break;
+        case "CLOCK":
+          piece = new Clock(pieceData.x, pieceData.y);
+          break;
+        default:
+          if (
+            pieceData.label === "NOT" &&
+            pieceData.numInputs === 1 &&
+            pieceData.numOutputs === 1
+          ) {
+            piece = new LogicGate(
+              pieceData.x,
+              pieceData.y,
+              (input) => !input,
+              "NOT",
+              pieceData.numInputs,
+              pieceData.numOutputs
+            );
+          } else {
+            piece = new LogicGate(
+              pieceData.x,
+              pieceData.y,
+              () => false,
+              pieceData.label,
+              pieceData.numInputs,
+              pieceData.numOutputs
+            );
+          }
+          piece.width = pieceData.width || NODE_WIDTH;
+          piece.height = pieceData.height || NODE_HEIGHT;
+          piece.updateInputs();
+          piece.updateOutputs();
+          break;
+      }
+    }
+    circuit.pieces.push(piece);
+  });
+
+  data.connections.forEach(connData => {
+    const startPiece = circuit.pieces[connData.startPieceIndex];
+    const endPiece = circuit.pieces[connData.endPieceIndex];
+    if (startPiece && endPiece) {
+      // Obter pino de saída do startPiece
+      let startPin;
+      if (
+        startPiece.type === "BUTTON" ||
+        startPiece.type === "MOMENTARY" ||
+        startPiece.type === "CLOCK"
+      ) {
+        startPin = startPiece.output;
+      } else if (startPiece.outputs && startPiece.outputs.length > connData.startIndex) {
+        startPin = startPiece.outputs[connData.startIndex];
+      } else {
+        startPin = { x: startPiece.x, y: startPiece.y };
+      }
+
+      // Obter pino de entrada do endPiece
+      let endPin;
+      if (endPiece.inputs && endPiece.inputs.length > connData.endIndex) {
+        endPin = endPiece.inputs[connData.endIndex];
+      } else {
+        endPin = { x: endPiece.x, y: endPiece.y };
+      }
+
+      circuit.connections.push({
+        start: {
+          piece: startPiece,
+          index: connData.startIndex,
+          x: startPin.x,
+          y: startPin.y
+        },
+        end: {
+          piece: endPiece,
+          index: connData.endIndex,
+          x: endPin.x,
+          y: endPin.y
+        },
+        intermediatePoints: connData.intermediatePoints || []
+      });
+    }
+  });
+
+  return circuit;
+};
+

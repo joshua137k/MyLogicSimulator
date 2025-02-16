@@ -21,34 +21,39 @@ document.getElementById("addOr").addEventListener("click", () =>
 
 
 document.getElementById("loadModule").addEventListener("click", () => {
-    const select = document.getElementById("savedModules");
-    const moduleName = select.value.trim().toLowerCase();
-    
-    const modData = modules.find(m => m.name.trim().toLowerCase() === moduleName);
-    console.log("moduleName:", moduleName);
-    console.log("Módulos disponíveis:", modules);
-    if (modData) {
-      insertModule(modData, circuit);
+  const select = document.getElementById("savedModules");
+  const moduleName = select.value.trim().toLowerCase();
+  const modData = modules.find(m => (m.name || m.label).trim().toLowerCase() === moduleName);
+  console.log("moduleName:", moduleName);
+  if (modData) {
+    if (modData.type && modData.type === "CompositeGate") {
+      const compositeGate = CompositeGate.fromJSON(modData);
+      circuit.circuit.pieces.push(compositeGate);
+      circuit.draw();
     } else {
-      alert("Módulo não encontrado.");
+      insertModule(modData, circuit);
+    }
+  } else {
+    alert("Módulo não encontrado.");
+  }
+});
+
+  
+document.querySelectorAll('.submenu').forEach(submenu => {
+  const toggleButton = submenu.querySelector('.submenuToggle');
+  const content = submenu.querySelector('.submenuContent');
+
+  toggleButton.addEventListener('click', () => {
+    const isVisible = content.style.display === 'block';
+    content.style.display = isVisible ? 'none' : 'block';
+  });
+
+  document.addEventListener('click', (event) => {
+    if (!submenu.contains(event.target)) {
+      content.style.display = 'none';
     }
   });
-  
-  document.querySelectorAll('.submenu').forEach(submenu => {
-    const toggleButton = submenu.querySelector('.submenuToggle');
-    const content = submenu.querySelector('.submenuContent');
-  
-    toggleButton.addEventListener('click', () => {
-      const isVisible = content.style.display === 'block';
-      content.style.display = isVisible ? 'none' : 'block';
-    });
-  
-    document.addEventListener('click', (event) => {
-      if (!submenu.contains(event.target)) {
-        content.style.display = 'none';
-      }
-    });
-  });
+});
   
     
    
