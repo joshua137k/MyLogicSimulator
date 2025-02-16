@@ -7,16 +7,16 @@
 // ===================
 const canvas = document.getElementById("circuitCanvas");
 
-const circuit = new Circuit(canvas);
+const circuit = new Game(canvas);
 
 document.getElementById("addAnd").addEventListener("click", () =>
-  circuit.addLogicGate((a, b) => a && b, "AND", 2)
+  circuit.addLogicGate(50,50,(a, b) => a && b, "AND", 2)
 );
 document.getElementById("addNot").addEventListener("click", () =>
-  circuit.addLogicGate(a => !a, "NOT", 1)
+  circuit.addLogicGate(50,50,a => !a, "NOT", 1)
 );
 document.getElementById("addOr").addEventListener("click", () =>
-  circuit.addLogicGate((a, b) => a || b, "OR", 2)
+  circuit.addLogicGate(50,50,(a, b) => a || b, "OR", 2)
 );
 
 
@@ -58,9 +58,11 @@ document.getElementById("addMomentary").addEventListener("click", () => circuit.
 document.getElementById("addDigit").addEventListener("click", () => circuit.addDigit());
 document.getElementById("addClock").addEventListener("click", () => circuit.addClock());
 document.getElementById("combine").addEventListener("click", () => circuit.combine());
+document.getElementById("sequencial").addEventListener("click", () => circuit.combineCompositeGame(circuit));
 document.getElementById("exportModules").addEventListener("click", exportModules);
 document.getElementById("importModules").addEventListener("click", () => {
   document.getElementById("fileInput").click(); 
 });
+
 document.getElementById("fileInput").addEventListener("change", importModules);
 

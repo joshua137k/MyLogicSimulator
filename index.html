@@ -17,6 +17,11 @@
         <button id="exportModules">Exportar Módulos</button>
         <button id="importModules">Importar Módulos</button>
         <input id="fileInput" type="file" style="display: none;" accept=".json" />
+
+        <button id="exportCompositeGate">Exportar CompositeGate</button>
+        <button id="importCompositeGate">Importar CompositeGate</button>
+        <input type="file" id="importModule" style="display: none;" accept=".json">
+
       </div>
     </div>
   
@@ -48,8 +53,19 @@
         <button id="addDigit">DigitDisplay</button>
       </div>
     </div>
-  
-    <button id="combine">CREATE</button>
+
+    <div class="submenu">
+      <button class="submenuToggle">COMBINE</button>
+        <div class="submenuContent">
+          <button id="combine">Combinatorio</button>
+          <button id="sequencial">Sequencial</button>
+        </div>
+    </div>
+
+
+    <button id="saveCircuit">Save</button>
+
+
   </div>
   
   
@@ -68,6 +84,8 @@
   <script src="statisFunc.js"></script>
   <script src="classes.js"></script>
   <script src="circuit.js"></script>
+  <script src="game.js"></script>
   <script src="script.js"></script>
+  <script src="scriptSAVE.js"></script>
 </body>
 </html>

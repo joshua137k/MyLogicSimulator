@@ -32,29 +32,24 @@ function drawPin(ctx, localX, localY, isHighlighted) {
   // Função para inserir um módulo salvo no circuito
   function insertModule(moduleData, circuit) {
   // Recria a função lógica a partir da tabela verdade salva
-  const { truthTable, numInputs, numOutputs, label } = moduleData;
-  const newLogicFunction = function(...inputs) {
-      if (inputs.length !== numInputs) {
-      return numOutputs === 1 ? false : new Array(numOutputs).fill(false);
-      }
-      let index = 0;
-      for (let i = 0; i < numInputs; i++) {
-      if (inputs[i]) {
-          index |= (1 << i);
-      }
-      }
-      return truthTable[index];
-  };
-  // Cria o novo módulo (LogicGate) com os parâmetros salvos
-  const gateHeight = Math.max(NODE_HEIGHT, Math.max(numInputs, numOutputs) * 25);
+    const { truthTable, numInputs, numOutputs, label } = moduleData;
+    const newLogicFunction = function(...inputs) {
+        if (inputs.length !== numInputs) {
+        return numOutputs === 1 ? false : new Array(numOutputs).fill(false);
+        }
+        let index = 0;
+        for (let i = 0; i < numInputs; i++) {
+        if (inputs[i]) {
+            index |= (1 << i);
+        }
+        }
+        return truthTable[index];
+    };
+    // Cria o novo módulo (LogicGate) com os parâmetros salvos
+    const gateHeight = Math.max(NODE_HEIGHT, Math.max(numInputs, numOutputs) * 25);
     const gateWidth = Math.max(NODE_WIDTH, Math.max(numInputs, numOutputs) * 25);
-  const newModule = new LogicGate(100, 100, newLogicFunction, label, numInputs, numOutputs);
-  newModule.width = gateWidth;
-  newModule.height = gateHeight;
-  newModule.updateInputs();
-  newModule.updateOutputs();
-  circuit.pieces.push(newModule);
-  circuit.draw();
+    circuit.addLogicGate(gateWidth, gateHeight, newLogicFunction, label, numInputs, numOutputs, gateWidth, gateHeight);
+    circuit.draw();
   }
   
   function populateSavedModules() {
@@ -146,7 +141,8 @@ function drawPin(ctx, localX, localY, isHighlighted) {
     return Math.hypot(mx - projx, my - projy);
   }
   
-  
+
+
   
   populateSavedModules(); 
   
