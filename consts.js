@@ -8,3 +8,4 @@ const PIN_OFFSET = 10;
 const PIN_RADIUS = 5;
 const FONT = "16px Arial";
 const FONT_COLOR = "#fff";
+let maxIteration = 3;

@@ -16,10 +16,15 @@ class Game {
       this.highlighted = null;
       this.activeMomentary = null;
       this.draggingIntermediate = null;
-  
+      this.save = 0;
+      this.frame=0;
+      this.fps=100;
       // Inicializa os eventos e inicia o desenho
       this.initEvents();
-      this.draw();
+      this.simulationInterval = setInterval(() => {
+        this.draw();
+      }, 1000/this.fps);
+     
     }
   
     // Ajusta o tamanho do canvas para ocupar a janela
@@ -37,7 +42,6 @@ class Game {
       this.canvas.addEventListener("dblclick", e => this.handleDbClick(e));
       window.addEventListener("resize", () => {
         this.resizeCanvas();
-        this.draw();
       });
     }
   
@@ -67,9 +71,19 @@ class Game {
   
     // Método principal de desenho, que atualiza a simulação e redesenha tudo no canvas
     draw() {
+
+      if(this.save >= 100){
+        const circuitJSON = circuit.circuit.toJSON(); // serializa o circuito atual
+        localStorage.setItem("savedCircuit", JSON.stringify(circuitJSON));
+        this.save = 0;
+      }
+      this.save++;
       // Executa a simulação do circuito (atualiza os estados lógicos)
-      this.circuit.simulate();
-  
+      if (this.frame >= 60) {
+        this.frame = 0;
+        this.circuit.simulate();
+      }
+      this.frame++;  
       // Limpa o canvas
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
   
@@ -149,7 +163,6 @@ class Game {
           this.connectionStart = piece.isOutputClicked(mouseX, mouseY);
           this.connecting = true;
           this.highlighted = this.connectionStart;
-          this.draw();
           return;
         }
       }
@@ -183,7 +196,6 @@ class Game {
               });
             }
             this.resetConnection();
-            this.draw();
             return;
           }
         }
@@ -201,7 +213,6 @@ class Game {
             } else if (e.button === 1) {
               piece.press();
               this.activeMomentary = piece;
-              this.draw();
               return;
             }
           } else if (piece.type === "BUTTON") {
@@ -212,7 +223,6 @@ class Game {
               return;
             } else if (e.button === 1) {
               piece.toggleState();
-              this.draw();
               return;
             }
           } else {
@@ -228,7 +238,6 @@ class Game {
   
       // Se nenhum dos casos anteriores se aplicar, reseta a conexão e redesenha
       this.resetConnection();
-      this.draw();
     }
   
     // Evento de movimento do mouse (mousemove)
@@ -247,7 +256,6 @@ class Game {
         if (this.draggingPiece.updateInputs) this.draggingPiece.updateInputs();
         if (this.draggingPiece.updateOutput) this.draggingPiece.updateOutput();
       }
-      this.draw();
     }
   
     // Evento de duplo clique (dblclick)
@@ -262,7 +270,6 @@ class Game {
       const connection = this.getConnectionAt(mouseX, mouseY);
       if (connection) {
         connection.intermediatePoints.push({ x: mouseX, y: mouseY });
-        this.draw();
       }
     }
   
@@ -290,7 +297,6 @@ class Game {
           conn.start.piece !== clickedPiece && conn.end.piece !== clickedPiece
         );
         this.circuit.pieces = this.circuit.pieces.filter(piece => piece !== clickedPiece);
-        this.draw();
         return;
       }
   
@@ -298,7 +304,6 @@ class Game {
       const connection = this.getConnectionAt(mouseX, mouseY);
       if (connection) {
         this.circuit.connections = this.circuit.connections.filter(conn => conn !== connection);
-        this.draw();
       }
     }
   
@@ -325,14 +330,13 @@ class Game {
 
       addLogicGate(width,height,logicFunction, label, numInputs = 2, numOutputs = 1) {
         this.circuit.addLogicGate(width,height,logicFunction, label, numInputs, numOutputs);
-        this.draw();
       }
-      addButton() { this.circuit.addButton(); this.draw();}
-      addClock(timer) {this.circuit.addClock(timer); this.draw();}
-      addMomentary() {this.circuit.addMomentary(); this.draw();}
+      addButton() { this.circuit.addButton();}
+      addClock(timer) {this.circuit.addClock(timer);}
+      addMomentary() {this.circuit.addMomentary();}
       addLight() {this.circuit.addLight();this.draw(); }
-      addDigit() {this.circuit.addDigit(); this.draw();}
-      combine() {this.circuit.combine(); this.draw();}
-      combineCompositeGame(game) {this.circuit.combineCompositeGame(game); this.draw();}
+      addDigit() {this.circuit.addDigit();}
+      combine() {this.circuit.combine();}
+      combineCompositeGame(game) {this.circuit.combineCompositeGame(game);}
   }
   

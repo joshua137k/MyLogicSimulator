@@ -378,6 +378,7 @@ evaluate() {
     } else {
     // Converte 10->A, 11->B, ... 15->F
     this.digit = String.fromCharCode("A".charCodeAt(0) + value - 10);
+    
     }
 }
 

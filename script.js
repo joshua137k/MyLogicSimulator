@@ -8,6 +8,11 @@
 const canvas = document.getElementById("circuitCanvas");
 
 const circuit = new Game(canvas);
+const savedCircuit = localStorage.getItem("savedCircuit");
+  if (savedCircuit) {
+    circuit.circuit = Circuit.fromJSON(JSON.parse(savedCircuit));
+    circuit.draw(); // redesenha o circuito carregado
+  }
 
 document.getElementById("addAnd").addEventListener("click", () =>
   circuit.addLogicGate(50,50,(a, b) => a && b, "AND", 2)
@@ -28,6 +33,12 @@ document.getElementById("loadModule").addEventListener("click", () => {
   if (modData) {
     if (modData.type && modData.type === "CompositeGate") {
       const compositeGate = CompositeGate.fromJSON(modData);
+      const gateHeight = Math.max(NODE_HEIGHT, Math.max(modData.numInputs, modData.numOutputs) * 25);
+      const gateWidth = Math.max(NODE_WIDTH, Math.max(modData.numInputs, modData.numOutputs) * 25);
+      compositeGate.width = gateWidth;
+      compositeGate.height = gateHeight;
+      compositeGate.updateInputs();
+      compositeGate.updateOutputs();
       circuit.circuit.pieces.push(compositeGate);
       circuit.draw();
     } else {

@@ -46,7 +46,7 @@ class Circuit {
       }
   
       iterations++;
-    } while (changed && iterations < 10);
+    } while (changed && iterations < maxIteration);
   }
   
 
@@ -377,6 +377,12 @@ const compositeGate = new CompositeGate(
   data.numInputs,
   data.numOutputs
 );
+const gateHeight = Math.max(NODE_HEIGHT, Math.max(data.numInputs, data.numOutputs) * 25);
+const gateWidth = Math.max(NODE_WIDTH, Math.max(data.numInputs, data.numOutputs) * 25);
+compositeGate.width = gateWidth;
+compositeGate.height = gateHeight;
+compositeGate.updateInputs();
+compositeGate.updateOutputs();
 compositeGate.subInputsMapping = data.subInputsMappingIndices.map(index => subCircuit.pieces[index]);
 compositeGate.subOutputsMapping = data.subOutputsMappingIndices.map(index => subCircuit.pieces[index]);
 return compositeGate;
@@ -385,7 +391,7 @@ return compositeGate;
 Circuit.prototype.toJSON = function() {
   return {
     pieces: this.pieces.map(piece => {
-      console.log(piece)
+     
       if (piece instanceof CompositeGate) {
         return piece.toJSON();
       } else {
@@ -447,8 +453,10 @@ Circuit.fromJSON = function(data) {
           return truthTable[index];
         };
         piece = new LogicGate(pieceData.x, pieceData.y, logicFunction, pieceData.label, numInputs, numOutputs);
-        piece.width = pieceData.width || NODE_WIDTH;
-        piece.height = pieceData.height || NODE_HEIGHT;
+        const gateHeight = Math.max(NODE_HEIGHT, Math.max(numInputs, numOutputs) * 25);
+        const gateWidth = Math.max(NODE_WIDTH, Math.max(numInputs, numOutputs) * 25);
+        piece.width = gateWidth;
+        piece.height = gateHeight;
         piece.updateInputs();
         piece.updateOutputs();
       } else {
@@ -459,6 +467,9 @@ Circuit.fromJSON = function(data) {
           case "LIGHT":
             piece = new Light(pieceData.x, pieceData.y);
             break;
+          case "DIGIT":
+              piece = new DigitDisplay(pieceData.x, pieceData.y);
+              break;
           case "MOMENTARY":
             piece = new MomentaryButton(pieceData.x, pieceData.y);
             break;
