@@ -385,7 +385,8 @@ return compositeGate;
 Circuit.prototype.toJSON = function() {
   return {
     pieces: this.pieces.map(piece => {
-      if (piece.type === "CompositeGate") {
+      console.log(piece)
+      if (piece instanceof CompositeGate) {
         return piece.toJSON();
       } else {
         return {
@@ -414,74 +415,86 @@ Circuit.fromJSON = function(data) {
   data.pieces.forEach(pieceData => {
     let piece;
     if (pieceData.type === "CompositeGate") {
-      // Reconstrói uma CompositeGate usando seu próprio fromJSON
       piece = CompositeGate.fromJSON(pieceData);
-    } else if (pieceData.truthTable) {
-      // Peça criada via combine() – possui uma truthTable
-      const numInputs = pieceData.numInputs;
-      const numOutputs = pieceData.numOutputs;
-      const truthTable = pieceData.truthTable;
-      const logicFunction = function(...inputs) {
-        if (inputs.length !== numInputs) {
-          return numOutputs === 1 ? false : new Array(numOutputs).fill(false);
-        }
-        let index = 0;
-        for (let i = 0; i < numInputs; i++) {
-          if (inputs[i]) {
-            index |= (1 << i);
-          }
-        }
-        return truthTable[index];
-      };
-      piece = new LogicGate(pieceData.x, pieceData.y, logicFunction, pieceData.label, numInputs, numOutputs);
-      piece.width = pieceData.width || NODE_WIDTH;
-      piece.height = pieceData.height || NODE_HEIGHT;
-      piece.updateInputs();
-      piece.updateOutputs();
+    } else if ( ["AND", "OR", "NOT"].includes(pieceData.label)) {
+      switch (pieceData.label) {
+        case "AND":
+          piece = new LogicGate(pieceData.x, pieceData.y, (a, b) => a && b, pieceData.label, pieceData.numInputs, pieceData.numOutputs);
+          break;
+        case "OR":
+          piece = new LogicGate(pieceData.x, pieceData.y, (a, b) => a || b, pieceData.label, pieceData.numInputs, pieceData.numOutputs);
+          break;
+        case "NOT":
+          piece = new LogicGate(pieceData.x, pieceData.y, a => !a, pieceData.label, pieceData.numInputs, pieceData.numOutputs);
+          break;
+      }
     } else {
-      // Outras peças: BUTTON, LIGHT, MOMENTARY, CLOCK ou gates customizadas (ex: NOT)
-      switch (pieceData.type) {
-        case "BUTTON":
-          piece = new Button(pieceData.x, pieceData.y);
-          break;
-        case "LIGHT":
-          piece = new Light(pieceData.x, pieceData.y);
-          break;
-        case "MOMENTARY":
-          piece = new MomentaryButton(pieceData.x, pieceData.y);
-          break;
-        case "CLOCK":
-          piece = new Clock(pieceData.x, pieceData.y);
-          break;
-        default:
-          if (
-            pieceData.label === "NOT" &&
-            pieceData.numInputs === 1 &&
-            pieceData.numOutputs === 1
-          ) {
-            piece = new LogicGate(
-              pieceData.x,
-              pieceData.y,
-              (input) => !input,
-              "NOT",
-              pieceData.numInputs,
-              pieceData.numOutputs
-            );
-          } else {
-            piece = new LogicGate(
-              pieceData.x,
-              pieceData.y,
-              () => false,
-              pieceData.label,
-              pieceData.numInputs,
-              pieceData.numOutputs
-            );
+      const mod = modules.find(m => (m.name || m.label).trim().toLowerCase() === pieceData.label.trim().toLowerCase());
+      if (mod) {
+        const numInputs = mod.numInputs;
+        const numOutputs = mod.numOutputs;
+        const truthTable = mod.truthTable;
+        const logicFunction = function(...inputs) {
+          if (inputs.length !== numInputs) {
+            return numOutputs === 1 ? false : new Array(numOutputs).fill(false);
           }
-          piece.width = pieceData.width || NODE_WIDTH;
-          piece.height = pieceData.height || NODE_HEIGHT;
-          piece.updateInputs();
-          piece.updateOutputs();
-          break;
+          let index = 0;
+          for (let i = 0; i < numInputs; i++) {
+            if (inputs[i]) {
+              index |= (1 << i);
+            }
+          }
+          return truthTable[index];
+        };
+        piece = new LogicGate(pieceData.x, pieceData.y, logicFunction, pieceData.label, numInputs, numOutputs);
+        piece.width = pieceData.width || NODE_WIDTH;
+        piece.height = pieceData.height || NODE_HEIGHT;
+        piece.updateInputs();
+        piece.updateOutputs();
+      } else {
+        switch (pieceData.type) {
+          case "BUTTON":
+            piece = new Button(pieceData.x, pieceData.y);
+            break;
+          case "LIGHT":
+            piece = new Light(pieceData.x, pieceData.y);
+            break;
+          case "MOMENTARY":
+            piece = new MomentaryButton(pieceData.x, pieceData.y);
+            break;
+          case "CLOCK":
+            piece = new Clock(pieceData.x, pieceData.y);
+            break;
+          default:
+            if (
+              pieceData.label === "NOT" &&
+              pieceData.numInputs === 1 &&
+              pieceData.numOutputs === 1
+            ) {
+              piece = new LogicGate(
+                pieceData.x,
+                pieceData.y,
+                (input) => !input,
+                "NOT",
+                pieceData.numInputs,
+                pieceData.numOutputs
+              );
+            } else {
+              piece = new LogicGate(
+                pieceData.x,
+                pieceData.y,
+                () => false,
+                pieceData.label,
+                pieceData.numInputs,
+                pieceData.numOutputs
+              );
+            }
+            piece.width = pieceData.width || NODE_WIDTH;
+            piece.height = pieceData.height || NODE_HEIGHT;
+            piece.updateInputs();
+            piece.updateOutputs();
+            break;
+        }
       }
     }
     circuit.pieces.push(piece);
@@ -491,7 +504,7 @@ Circuit.fromJSON = function(data) {
     const startPiece = circuit.pieces[connData.startPieceIndex];
     const endPiece = circuit.pieces[connData.endPieceIndex];
     if (startPiece && endPiece) {
-      // Obter pino de saída do startPiece
+      // Obtém o pino de saída do startPiece
       let startPin;
       if (
         startPiece.type === "BUTTON" ||
@@ -505,7 +518,7 @@ Circuit.fromJSON = function(data) {
         startPin = { x: startPiece.x, y: startPiece.y };
       }
 
-      // Obter pino de entrada do endPiece
+      // Obtém o pino de entrada do endPiece
       let endPin;
       if (endPiece.inputs && endPiece.inputs.length > connData.endIndex) {
         endPin = endPiece.inputs[connData.endIndex];
