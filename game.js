@@ -79,7 +79,7 @@ class Game {
       }
       this.save++;
       // Executa a simulação do circuito (atualiza os estados lógicos)
-      if (this.frame >= 60) {
+      if (this.frame >= minFrames) {
         this.frame = 0;
         this.circuit.simulate();
       }
