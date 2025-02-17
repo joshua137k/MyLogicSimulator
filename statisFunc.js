@@ -41,8 +41,9 @@ function insertModule(moduleData, circuit) {
   };
   const gateHeight = Math.max(NODE_HEIGHT, Math.max(numInputs, numOutputs) * 25);
   const gateWidth = Math.max(NODE_WIDTH, Math.max(numInputs, numOutputs) * 25);
+  
   circuit.addLogicGate(gateWidth, gateHeight, newLogicFunction, label, numInputs, numOutputs, gateWidth, gateHeight);
-  circuit.draw();
+
 }
 
 function populateSavedModules() {

@@ -40,7 +40,6 @@ document.getElementById("loadModule").addEventListener("click", () => {
       compositeGate.updateInputs();
       compositeGate.updateOutputs();
       circuit.circuit.pieces.push(compositeGate);
-      circuit.draw();
     } else {
       insertModule(modData, circuit);
     }

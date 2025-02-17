@@ -70,6 +70,8 @@ class Circuit {
       const x = Math.random() * 500 + 50;
       const y = Math.random() * 300 + 50;
       const newPiece = new Button(x, y);
+      newPiece.updateInputs();
+      newPiece.updateOutputs();
       this.pieces.push(newPiece);
     }
 
@@ -77,6 +79,8 @@ class Circuit {
     const x = Math.random() * 500 + 50;
     const y = Math.random() * 300 + 50;
     const newPiece = new Clock(x, y, timer);
+    newPiece.updateInputs();
+    newPiece.updateOutputs();
     this.pieces.push(newPiece);
   }
 
@@ -84,6 +88,8 @@ class Circuit {
     const x = Math.random() * 500 + 50;
     const y = Math.random() * 300 + 50;
     const newPiece = new MomentaryButton(x, y);
+    newPiece.updateInputs();
+    newPiece.updateOutputs();
     this.pieces.push(newPiece);
   }
 
@@ -91,6 +97,8 @@ class Circuit {
     const x = Math.random() * 500 + 50;
     const y = Math.random() * 300 + 50;
     const newPiece = new Light(x, y);
+    newPiece.updateInputs();
+    newPiece.updateOutputs();
     this.pieces.push(newPiece);
   }
 
@@ -98,6 +106,9 @@ class Circuit {
     const x = Math.random() * 500 + 50;
     const y = Math.random() * 300 + 50;
     const newPiece = new DigitDisplay(x, y);
+    newPiece.updateInputs();
+    newPiece.updateOutputs();
+    
     this.pieces.push(newPiece);
   }
 
@@ -168,6 +179,8 @@ class Circuit {
     const newModule = new LogicGate(100, 100, newLogicFunction, "Module", numInputs, numOutputs);
     newModule.width = gateWidth;
     newModule.height = gateHeight;
+    newModule.updateInputs();
+    newModule.updateOutputs();
 
     // Pergunta ao usuário o nome para o módulo combinado.
     const moduleName = prompt("Digite o nome para este módulo combinado:");
@@ -241,6 +254,8 @@ class Circuit {
     
     compositeGate.width = NODE_WIDTH;
     compositeGate.height = NODE_HEIGHT;
+    compositeGate.updateInputs();
+    compositeGate.updateOutputs();
 
     saveModule(compositeGate.toJSON());
 
@@ -249,8 +264,6 @@ class Circuit {
     game.circuit = new Circuit();
     game.circuit.pieces.push(compositeGate);
 
-    // 7. Redesenha o game para atualizar a interface.
-    game.draw();
   
     console.log("Circuito atual encapsulado em CompositeGate:", compositeGate);
   }
