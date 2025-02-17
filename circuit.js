@@ -70,8 +70,7 @@ class Circuit {
       const x = Math.random() * 500 + 50;
       const y = Math.random() * 300 + 50;
       const newPiece = new Button(x, y);
-      newPiece.updateInputs();
-      newPiece.updateOutputs();
+
       this.pieces.push(newPiece);
     }
 
@@ -79,8 +78,7 @@ class Circuit {
     const x = Math.random() * 500 + 50;
     const y = Math.random() * 300 + 50;
     const newPiece = new Clock(x, y, timer);
-    newPiece.updateInputs();
-    newPiece.updateOutputs();
+
     this.pieces.push(newPiece);
   }
 
@@ -88,8 +86,7 @@ class Circuit {
     const x = Math.random() * 500 + 50;
     const y = Math.random() * 300 + 50;
     const newPiece = new MomentaryButton(x, y);
-    newPiece.updateInputs();
-    newPiece.updateOutputs();
+
     this.pieces.push(newPiece);
   }
 
@@ -97,8 +94,7 @@ class Circuit {
     const x = Math.random() * 500 + 50;
     const y = Math.random() * 300 + 50;
     const newPiece = new Light(x, y);
-    newPiece.updateInputs();
-    newPiece.updateOutputs();
+
     this.pieces.push(newPiece);
   }
 
@@ -106,8 +102,7 @@ class Circuit {
     const x = Math.random() * 500 + 50;
     const y = Math.random() * 300 + 50;
     const newPiece = new DigitDisplay(x, y);
-    newPiece.updateInputs();
-    newPiece.updateOutputs();
+
     
     this.pieces.push(newPiece);
   }
